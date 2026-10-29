@@ -336,6 +336,14 @@
         "gate": true,
         "purpose": "Memory frontmatter check for memory files written from Bash (before the write).",
         "fingerprint": "c43f4eb6a848f6abe80c053115250eb63529c59d8119f69463af15c904b6e55b"
+      },
+      {
+        "index": 19,
+        "id": "pre-tool-use/shell-rescan-guard",
+        "hook": "shell-rescan-guard",
+        "gate": true,
+        "purpose": "PreToolUse gate: refuse a Bash command whose own TEXT will be re-scanned by the shell, because that is how prose becomes an executed command.",
+        "fingerprint": "dc80b8d05304d0e0c3e7015a34afe77f9b56f9f8c464800d65ac6b26f4f046b9"
       }
     ],
     "Stop": [

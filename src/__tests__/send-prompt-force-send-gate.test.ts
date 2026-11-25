@@ -23,12 +23,13 @@ describe('sendPromptToSession waitForIdle gate', () => {
     const sig = AGENT_PROCESS.slice(sigIdx, sigIdx + 300)
     // The opts bag grew onBusyTimeout/idleTimeoutMs for the inbox-nudge
     // watcher (an OPTIONAL prompt aborts instead of best-effort-typing into a
-    // busy pane); waitForIdle stays the first, default-ON member. DELIVLOCK805
+    // busy pane); waitForIdle stays the default-ON member. DELIVLOCK805
     // added lockMode (per-pane delivery mutex: deliver/recover/held).
     // AUDITBORITEKVESZ918 added onBusySend: the caller learns that the prompt
     // went into a BUSY pane best-effort, so a possibly-spliced delivery is not
-    // recorded as a clean run.
-    expect(sig).toMatch(/opts:\s*\{\s*waitForIdle\?:\s*boolean;\s*onBusyTimeout\?:\s*'send'\s*\|\s*'abort';\s*idleTimeoutMs\?:\s*number;\s*lockMode\?:\s*SendLockMode;\s*onBusySend\?:\s*\(\)\s*=>\s*void;\s*onEmitStart\?:\s*\(\)\s*=>\s*void\s*\}/)
+    // recorded as a clean run. CODEXTAB1125 added engine FIRST: a codex TUI
+    // submits with Tab, so the submit key is chosen per engine.
+    expect(sig).toMatch(/opts:\s*\{\s*engine\?:\s*string;\s*waitForIdle\?:\s*boolean;\s*onBusyTimeout\?:\s*'send'\s*\|\s*'abort';\s*idleTimeoutMs\?:\s*number;\s*lockMode\?:\s*SendLockMode;\s*onBusySend\?:\s*\(\)\s*=>\s*void;\s*onEmitStart\?:\s*\(\)\s*=>\s*void\s*\}/)
   })
 
   it('the gate defaults ON (waitForIdle !== false) so all other callers keep it', () => {

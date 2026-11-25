@@ -262,9 +262,11 @@ function callsNamed(root: ts.Node, name: string): number {
   return n
 }
 
-// The pre-pass loop exactly as it was before the wrap (only re-indented);
-// pinning it byte-for-byte inside the callback proves no statement was added,
-// removed or reordered -- the wrap is the whole change.
+// The pre-pass loop pinned byte-for-byte (re-indented): the withTmuxBatch wrap
+// stays the whole structural change, and every per-receiver read stays inside
+// it, once per receiver per tick. The engine read joins the other cached
+// reads (CODEXTAB1125); pinning the loop still proves no statement was added,
+// removed or reordered outside this known set.
 const ORIGINAL_LOOP = `
 for (const agent of receiversInTick) {
 const host = readAgentRemoteHost(agent)
@@ -273,7 +275,7 @@ const exists = sessionExistsOnHost(host, session)
 // Read once per receiver per tick, not once per message: the flag decides
 // the whole delivery path below and a per-message read would re-open the
 // same config file for every queued item.
-agentSessionCache.set(agent, { host, session, exists, worksource: readAgentWorksourceChannel(agent) })
+agentSessionCache.set(agent, { host, session, exists, worksource: readAgentWorksourceChannel(agent), engine: readAgentEngine(agent) })
 if (exists) {
 presentNow.add(agent)
 } else {
@@ -305,8 +307,9 @@ describe('source pins: the receiver pre-pass runs inside withTmuxBatch', () => {
     const loops = body.statements.filter((st) => ts.isForOfStatement(st))
     expect(loops).toHaveLength(1)
     expect(nodeText(loops[0])).toBe(ORIGINAL_LOOP)
-    // The dedupable read is inside, once per receiver.
+    // The dedupable reads are inside, once per receiver.
     expect(callsNamed(cb, 'sessionExistsOnHost')).toBe(1)
+    expect(callsNamed(cb, 'readAgentEngine')).toBe(1)
   })
 
   it('the wrapped region is synchronous (R1) and mutates no session (R2)', () => {

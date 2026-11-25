@@ -141,7 +141,10 @@ describe('wiring', () => {
     expect(RUNNER).toMatch(/entry\.parkedEnterSent = true/)
   })
 
-  it('a multi-chunk prompt waits for the pane to settle before its Enter', () => {
-    expect(AGENT).toMatch(/if \(oneLine\.length > CHUNK\) await budgetedWait\(PANE_SETTLE_MAX_MS, \(maxMs\) => waitForPaneSettle\(\(\) => capturePane\(session, host\), \{ maxMs \}\)\)\s*\n[\s\S]{0,1500}?\n\s*runTmux\(host, \['send-keys', '-t', exactTmuxTarget\(session\), 'Enter'\]/)
+  it('a multi-chunk prompt waits for the pane to settle before its submit key', () => {
+    // CODEXTAB1125: the submitting key is engine-dependent (Tab on a codex
+    // TUI, Enter elsewhere), pinned as the submitKey variable; its mapping
+    // is table-tested in the agent-process send tests.
+    expect(AGENT).toMatch(/if \(oneLine\.length > CHUNK\) await budgetedWait\(PANE_SETTLE_MAX_MS, \(maxMs\) => waitForPaneSettle\(\(\) => capturePane\(session, host\), \{ maxMs \}\)\)\s*\n[\s\S]{0,1500}?\n\s*runTmux\(host, \['send-keys', '-t', exactTmuxTarget\(session\), submitKey\]/)
   })
 })

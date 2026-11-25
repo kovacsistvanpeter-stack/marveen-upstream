@@ -63,6 +63,7 @@ vi.mock('../db.js', () => ({
 }))
 vi.mock('../web/voice-directive.js', () => ({ resolveAgentChannelStateDir: () => '/tmp/none' }))
 vi.mock('../web/agent-config.js', () => ({
+  readAgentEngine: () => 'claude',
   readAgentRemoteHost: () => null,
   readAgentPullDelivery: () => false,
   readAgentVoiceConfig: () => ({ responseMode: 'text' }),
@@ -176,7 +177,7 @@ describe('one router tick with a busy recipient (71263d15 C)', () => {
     expect(String(text)).toContain(STOP_PREFIX)
     expect(host).toBeNull()
     // No idle wait, and the last look at the pane inside the send lane (the emit guard).
-    expect(opts).toEqual({ waitForIdle: false, emitGuard: urgentEmitRefusal })
+    expect(opts).toEqual({ engine: 'claude', waitForIdle: false, emitGuard: urgentEmitRefusal })
     expect(mockMarkDelivered.mock.calls.map((c) => c[0])).toEqual([11])
   })
 

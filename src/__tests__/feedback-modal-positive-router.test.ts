@@ -69,6 +69,7 @@ vi.mock('../web/voice-directive.js', () => ({
 }))
 
 vi.mock('../web/agent-config.js', () => ({
+  readAgentEngine: () => 'claude',
   readAgentRemoteHost: () => null,
   readAgentVoiceConfig: () => ({ responseMode: 'text' }),
   isKnownAgent: () => true,

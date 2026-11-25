@@ -25,7 +25,7 @@ import { isQualifiedId } from './federation/address.js'
 import { sendFederatedMessage } from './federation/bridge.js'
 import { getFederationConfig, abandonWindowMsForPeer } from './federation/config.js'
 import { scheduleDeliveryTurnCheck } from './delivery-turn-check.js'
-import { agentDir, readAgentRemoteHost, readAgentVoiceConfig, readAgentWorksourceChannel, readAgentPullDelivery, type AgentVoiceConfig } from './agent-config.js'
+import { agentDir, readAgentEngine, readAgentRemoteHost, readAgentVoiceConfig, readAgentWorksourceChannel, readAgentPullDelivery, type AgentVoiceConfig } from './agent-config.js'
 import { projectsDirFor } from './active-model.js'
 import { resolveAgentConfigDirForRead } from './claude-plans.js'
 import { readTranscriptProgressAt } from './transcript-progress.js'
@@ -864,7 +864,7 @@ export async function runMessageRouterTick(): Promise<void> {
     const absentNow = new Set<string>()
     const presentNow = new Set<string>()
     // agent -> {exists: bool, host, session} cached lookup for the main loop.
-    const agentSessionCache = new Map<string, {host: string | null, session: string, exists: boolean, worksource: boolean}>()
+    const agentSessionCache = new Map<string, {host: string | null, session: string, exists: boolean, worksource: boolean, engine: string}>()
     // One list-sessions for the whole receiver pass: every local receiver's
     // sessionExistsOnHost() asks the identical read-only query, and
     // withTmuxBatch answers all of them from one memoized spawn while this
@@ -878,7 +878,7 @@ export async function runMessageRouterTick(): Promise<void> {
         // Read once per receiver per tick, not once per message: the flag decides
         // the whole delivery path below and a per-message read would re-open the
         // same config file for every queued item.
-        agentSessionCache.set(agent, { host, session, exists, worksource: readAgentWorksourceChannel(agent) })
+        agentSessionCache.set(agent, { host, session, exists, worksource: readAgentWorksourceChannel(agent), engine: readAgentEngine(agent) })
         if (exists) {
           presentNow.add(agent)
         } else {
@@ -1399,7 +1399,7 @@ export async function runMessageRouterTick(): Promise<void> {
             : collectBatchMates(pending, msg, now, agentSessionCache)
           if (mates.items.length > 0) {
             const text = composeBatchInjection([{ prefix, wrapped }, ...mates.items], mates.remaining)
-            await sendPromptToSession(session, text, host)
+            await sendPromptToSession(session, text, host, { engine: cached?.engine })
             // The head row is marked delivered by the shared code below; the
             // mates are marked here and skipped by the loop via
             // batchedMsgIdsThisTick, exactly like the reconnect batch.
@@ -1426,7 +1426,7 @@ export async function runMessageRouterTick(): Promise<void> {
             // a running turn can open a permission prompt between the check above and either
             // of them (urgentEmitRefusal).
             if (isStop || unblockPass) {
-              const outcome = await sendPromptToSession(session, prefix + wrapped, host, { waitForIdle: false, emitGuard: urgentEmitRefusal })
+              const outcome = await sendPromptToSession(session, prefix + wrapped, host, { engine: cached?.engine, waitForIdle: false, emitGuard: urgentEmitRefusal })
               if (outcome === 'aborted-guard' || outcome === 'aborted-guard-typed') {
                 const typed = outcome === 'aborted-guard-typed'
                 const hold = detectUrgentPaneHold(capturePane(session, host))
@@ -1438,7 +1438,7 @@ export async function runMessageRouterTick(): Promise<void> {
               }
               logger.info({ id: msg.id, to: msg.to_agent, urgent: msg.urgent === 1, unblock: unblockPass }, 'message-router: urgent, STOP or unblock row sent without waiting for an idle pane')
             } else {
-              await sendPromptToSession(session, prefix + wrapped, host)
+              await sendPromptToSession(session, prefix + wrapped, host, { engine: cached?.engine })
             }
           }
         }

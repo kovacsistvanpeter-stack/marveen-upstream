@@ -56,6 +56,7 @@ vi.mock('../web/voice-directive.js', () => ({
 }))
 
 vi.mock('../web/agent-config.js', () => ({
+  readAgentEngine: () => 'claude',
   readAgentRemoteHost: () => null,
   readAgentVoiceConfig: () => ({ responseMode: 'text' }),
   // Default-OFF, matching the real reader: the agents in this test take the

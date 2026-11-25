@@ -53,6 +53,7 @@ vi.mock('../db.js', () => ({
 }))
 vi.mock('../web/voice-directive.js', () => ({ resolveAgentChannelStateDir: () => '/tmp/none' }))
 vi.mock('../web/agent-config.js', () => ({
+  readAgentEngine: () => 'claude',
   readAgentRemoteHost: () => null,
   readAgentPullDelivery: () => false,
   readAgentVoiceConfig: () => ({ responseMode: 'text' }),
@@ -121,7 +122,7 @@ describe('an unblock row at a busy or asking pane (#673)', () => {
     const [session, text, host, opts] = mockSendPrompt.mock.calls[0]
     expect(session).toBe('agent-kai')
     expect(host).toBeNull()
-    expect(opts).toEqual({ waitForIdle: false, emitGuard: urgentEmitRefusal })
+    expect(opts).toEqual({ engine: 'claude', waitForIdle: false, emitGuard: urgentEmitRefusal })
     expect(String(text)).toContain('FELOLDÁS')
     expect(String(text)).toContain('jóváhagyás megjött (301)')
     expect(liveStatus.get(301)).toBe('delivered')

@@ -60,6 +60,7 @@ vi.mock('../db.js', () => ({
 }))
 vi.mock('../web/voice-directive.js', () => ({ resolveAgentChannelStateDir: () => '/tmp/none' }))
 vi.mock('../web/agent-config.js', () => ({
+  readAgentEngine: () => 'claude',
   readAgentRemoteHost: () => null,
   readAgentPullDelivery: () => false,
   readAgentVoiceConfig: () => ({ responseMode: 'text' }),
@@ -156,7 +157,7 @@ describe('one router tick with a busy recipient (795d1f48 a)', () => {
     expect(session).toBe('agent-dex')
     expect(String(text)).toContain('MENTESI JELZES (11)')
     expect(host).toBeNull()
-    expect(opts).toEqual({ waitForIdle: false, emitGuard: urgentEmitRefusal })
+    expect(opts).toEqual({ engine: 'claude', waitForIdle: false, emitGuard: urgentEmitRefusal })
     expect(mockMarkDelivered.mock.calls.map((c) => c[0])).toEqual([11])
   })
 
@@ -174,7 +175,7 @@ describe('one router tick with a busy recipient (795d1f48 a)', () => {
     ready.set('agent-dex', true)
     await runMessageRouterTick()
     expect(mockSendPrompt.mock.calls.map((c) => c[0])).toEqual(['agent-dex'])
-    expect(mockSendPrompt.mock.calls[0][3]).toBeUndefined()
+    expect(mockSendPrompt.mock.calls[0][3]).toEqual({ engine: 'claude' })
     expect(liveStatus.get(25)).toBe('delivered')
   })
 

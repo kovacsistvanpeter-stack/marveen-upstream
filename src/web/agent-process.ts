@@ -4884,6 +4884,7 @@ export function paneTypedChunks(oneLine: string, chunkSize: number = PANE_CHUNK)
 // Enters. The retry budget bounds the loop so a pathologically stuck
 // pane gives up rather than spinning.
 export interface SendPromptOpts {
+  engine?: string
   waitForIdle?: boolean
   onBusyTimeout?: 'send' | 'abort'
   idleTimeoutMs?: number
@@ -4911,9 +4912,10 @@ export async function sendPromptToSession(
   session: string,
   text: string,
   host: string | null = null,
-  opts: { waitForIdle?: boolean; onBusyTimeout?: 'send' | 'abort'; idleTimeoutMs?: number; lockMode?: SendLockMode; onBusySend?: () => void; onEmitStart?: () => void } & { emitGuard?: SendEmitGuard } = {},
+  opts: { engine?: string; waitForIdle?: boolean; onBusyTimeout?: 'send' | 'abort'; idleTimeoutMs?: number; lockMode?: SendLockMode; onBusySend?: () => void; onEmitStart?: () => void } & { emitGuard?: SendEmitGuard } = {},
 ): Promise<'sent' | 'aborted-busy' | 'skipped-locked' | 'aborted-guard' | 'aborted-guard-typed'> {
   const lockMode: SendLockMode = opts.lockMode ?? 'deliver'
+  const submitKey = opts.engine === 'codex' ? 'Tab' : 'Enter'
   // PANEWRITERS805: the three modal dismissals are probe+act keystroke writers
   // that ran BEFORE the lane lock -- so they could press Escape/Enter into a
   // pane mid-delivery (an Enter on the model-consent dialog confirms its
@@ -5109,7 +5111,8 @@ export async function sendPromptToSession(
       logger.warn({ session, reason: refusal }, 'sendPromptToSession: emit guard refused the pane before the submitting Enter; typed text left unsubmitted, no further keys')
       return 'aborted-guard-typed'
     }
-    runTmux(host, ['send-keys', '-t', exactTmuxTarget(session), 'Enter'], { timeout: 5000 })
+    // Measured Codex TUI behavior: Tab queues and self-flushes while busy/starting; Enter defers or glues text in the composer.
+    runTmux(host, ['send-keys', '-t', exactTmuxTarget(session), submitKey], { timeout: 5000 })
     return 'sent'
   }
   if ((await sendChunks()) === 'aborted-guard-typed') return 'aborted-guard-typed'
@@ -5186,7 +5189,7 @@ export async function sendPromptToSession(
     }
     // action === 'retry-enter'
     try {
-      runTmux(host, ['send-keys', '-t', exactTmuxTarget(session), 'Enter'], { timeout: 5000 })
+      runTmux(host, ['send-keys', '-t', exactTmuxTarget(session), submitKey], { timeout: 5000 })
     } catch (err) {
       logger.warn({ err, session, attempt }, 'Retry-Enter send failed')
       break

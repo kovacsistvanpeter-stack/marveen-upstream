@@ -185,6 +185,15 @@ export function readAgentModel(name: string): string {
   return resolveAgentModelDetailed(name).model
 }
 
+export function readAgentEngine(name: string): string {
+  const configPath = join(agentConfigRoot(name), 'agent-config.json')
+  try {
+    const config = JSON.parse(readFileOr(configPath, '{}'))
+    if (config.engine === 'codex') return 'codex'
+  } catch { /* fall through */ }
+  return 'claude'
+}
+
 // Card c755f4b2 Block B. Passing null REMOVES the key rather than writing a
 // null: an absent field and an explicit null must not become two ways of
 // saying the same thing in a config a human also edits by hand.
